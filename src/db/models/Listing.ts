@@ -7,6 +7,7 @@ import ListingParameters, {
 // Define the attributes for the Listing model
 interface ListingAttributes {
   id: number;
+  hash: string;
   title: string;
   link: string;
   pub_date: Date;
@@ -23,6 +24,7 @@ class Listing
   implements ListingAttributes
 {
   declare id: number;
+  public hash!: string;
   public title!: string;
   public link!: string;
   public pub_date!: Date;
@@ -50,30 +52,6 @@ class Listing
 
     return parameters;
   }
-
-  // Method to upsert parameters
-  // public async upsertParameters(
-  //   parameterData: Partial<ListingParametersCreationAttributes>
-  // ): Promise<ListingParameters> {
-  //   // Use Sequelize association methods to simplify the process
-  //   const parameters = await this.getParameters();
-  //   if (parameters) {
-  //     await parameters.update(parameterData);
-  //     return parameters;
-  //   } else {
-  //     return await this.createParameters(parameterData);
-  //   }
-  // }
-
-  // public async setParameters(
-  //   parameters: ListingParametersCreationAttributes
-  // ): Promise<ListingParameters> {
-  //   const params = await ListingParameters.create({
-  //     ...parameters,
-  //     id: this.id,
-  //   });
-  //   return params;
-  // }
 }
 
 // Initialize the Listing model
@@ -83,6 +61,11 @@ Listing.init(
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+    },
+    hash: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: false,
     },
     title: {
       type: DataTypes.STRING,

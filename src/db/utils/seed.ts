@@ -1,5 +1,6 @@
 import { sequelize, User } from "../models/index.js";
 import Listing from "../models/Listing.js";
+import generateListingHash from "./hash.js";
 
 async function seed() {
   try {
@@ -23,7 +24,8 @@ async function seed() {
 
     const listing = await Listing.create({
       title: "New Listing",
-      link: "http://example.com",
+      link: "http://example.com/1234",
+      hash: generateListingHash("http://example.com/1234"),
       pub_date: new Date(),
     });
 

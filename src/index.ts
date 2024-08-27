@@ -12,12 +12,26 @@ import {
 import { ListingCreationAttributes } from "./db/models/Listing.js";
 import { ListingParametersCreationAttributes } from "./db/models/ListingParameters.js";
 import admin from "./firebaseAdmin.js"; // Import Firebase Admin SDK
+import generateListingHash from "./db/utils/hash.js";
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json());
 app.use(cors());
+
+type ListingData = {
+  hash?: string;
+  title: string;
+  link: string;
+  pub_date: Date;
+  price: number;
+  move_in_date: Date;
+  num_baths: number;
+  num_beds: number;
+  parking: boolean;
+  furnished: boolean;
+};
 
 // Middleware to verify Firebase ID tokens
 const authenticateFirebaseToken = async (
@@ -102,6 +116,43 @@ app.get("/users/me", authenticateFirebaseToken, async (req: Request, res) => {
 });
 
 app.post(
+  "/listings/add/bulk",
+  authenticateFirebaseToken,
+  authorizeAdmin,
+  async (req: Request, res: Response) => {
+    try {
+      const { Listings }: { Listings: ListingData[] } = req.body; // Ensure the Listings array does not include 'id'
+
+      const createdListingIds: number[] = [];
+      for (let listingData of Listings) {
+        const hash: string = generateListingHash(listingData.link);
+
+        listingData.hash = hash as string; // Explicitly set hash as string
+        // const listing = await Listing.create(
+        //   listingData as ListingCreationAttributes
+        // );
+        const [listing, created] = await Listing.upsert(
+          listingData as ListingCreationAttributes
+        );
+        if (created) {
+          console.log("Listing was created:", listing.id);
+        } else {
+          console.log("Listing was updated:", listing.id);
+        }
+        listing.upsertParameters(listingData);
+        createdListingIds.push(listing.id);
+      }
+      res.status(201).json({ listings: createdListingIds });
+    } catch (error) {
+      console.error("Error adding listings in bulk:", error);
+      res
+        .status(500)
+        .json({ error: "An error occurred while adding listings" });
+    }
+  }
+);
+
+app.post(
   "/users/add",
   authenticateFirebaseToken,
   async (req: Request, res: Response) => {
@@ -141,69 +192,48 @@ app.post(
   }
 );
 
-// TODO
-app.post(
-  "/listings/add/bulk",
-  authenticateFirebaseToken,
-  authorizeAdmin,
-  async (req: Request, res: Response) => {
-    console.log("INSIDE THE");
-    try {
-      const listings: Listing[] = req.body;
-      console.log(listings);
-      for (let i = 0; i < 3; i++) {
-        console.log("Block statement execution no." + i);
-      }
-    } catch (error) {
-      console.error("Error adding listings in bulk:", error);
-      res
-        .status(500)
-        .json({ error: "An error occurred while adding listings" });
-    }
-  }
-);
-
 // Add listing and associate it with a user
-app.post("/listings/associate", async (req: Request, res: Response) => {
-  try {
-    const { title, link, pub_date }: ListingCreationAttributes = req.body;
-    const { ...parameters }: ListingParametersCreationAttributes = req.body;
+// app.post("/listings/associate", async (req: Request, res: Response) => {
+//   try {
+//     const { title, link, pub_date }: ListingCreationAttributes = req.body;
+//     const { ...parameters }: ListingParametersCreationAttributes = req.body;
 
-    // Check if all required fields are provided
-    if (!title || !link || !pub_date || !parameters) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
+//     // Check if all required fields are provided
+//     if (!title || !link || !pub_date || !parameters) {
+//       return res.status(400).json({ error: "Missing required fields" });
+//     }
 
-    // Sync Firebase user with PostgreSQL
-    const user = await syncFirebaseUser(req.body.firebaseUId, req.body.email);
+//     // Sync Firebase user with PostgreSQL
+//     const user = await syncFirebaseUser(req.body.firebaseUId, req.body.email);
 
-    // Create listing parameters if they don't exist
-    const listingParameters = await ListingParameters.create(parameters);
+//     // Create listing parameters if they don't exist
+//     const listingParameters = await ListingParameters.create(parameters);
 
-    // Create the new listing
-    const newListing = await Listing.create({
-      title,
-      link,
-      pub_date,
-    });
+//     // Create the new listing
+//     const newListing = await Listing.create({
+//       title,
+//       link,
+//       pub_date,
+//     });
 
-    newListing.upsertParameters(listingParameters);
+//     newListing.upsertParameters(listingParameters);
 
-    // Associate the listing with the user
-    await user.addListing(newListing);
+//     // Associate the listing with the user
+//     await user.addListing(newListing);
 
-    res
-      .status(201)
-      .json({ user: user, listing: newListing, parameters: listingParameters });
-  } catch (error) {
-    console.error("Error associating listing:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while associating the listing" });
-  }
-});
+//     res
+//       .status(201)
+//       .json({ user: user, listing: newListing, parameters: listingParameters });
+//   } catch (error) {
+//     console.error("Error associating listing:", error);
+//     res
+//       .status(500)
+//       .json({ error: "An error occurred while associating the listing" });
+//   }
+// });
 
 // Get user filter
+
 app.get("/users/me/filter", authenticateFirebaseToken, async (req, res) => {
   let user = await User.findOne({ where: { firebaseUId: req.user?.uid } });
   if (!user) {
@@ -214,6 +244,34 @@ app.get("/users/me/filter", authenticateFirebaseToken, async (req, res) => {
     return res.status(404).json({ error: "Filter not found" });
   }
   res.json(userFilter);
+});
+
+app.post("/users/sync", authenticateFirebaseToken, async (req, res) => {
+  const { firebaseUId, email } = req.body;
+
+  // Validate required fields
+  if (!firebaseUId || !email) {
+    return res
+      .status(400)
+      .json({ error: "Missing required fields: firebaseUId, email" });
+  }
+
+  // Check if the user already exists
+  let user = await User.findOne({ where: { firebaseUId } });
+
+  if (!user) {
+    // If the user doesn't exist, create a new user
+    user = await User.create({ firebaseUId, email });
+    return res.status(201).json(user);
+  }
+
+  // // If the user exists, update the user's email if necessary
+  // if (user.email !== email) {
+  //   user.email = email;
+  //   await user.save();
+  // }
+
+  return res.status(200).json(user);
 });
 
 // Update user filter
