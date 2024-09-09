@@ -20,17 +20,21 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json());
 app.use(cors());
 
+type ListingDataParameters = {
+  availability: Date;
+  furnished: boolean;
+  num_baths: number;
+  num_beds: number;
+  parking: boolean;
+};
+
 type ListingData = {
   hash?: string;
   title: string;
   link: string;
   pub_date: Date;
   price: number;
-  move_in_date: Date;
-  num_baths: number;
-  num_beds: number;
-  parking: boolean;
-  furnished: boolean;
+  parameters: ListingDataParameters;
 };
 
 // Middleware to verify Firebase ID tokens
@@ -127,10 +131,8 @@ app.post(
       for (let listingData of Listings) {
         const hash: string = generateListingHash(listingData.link);
 
+        // What is this hash used for ?
         listingData.hash = hash as string; // Explicitly set hash as string
-        // const listing = await Listing.create(
-        //   listingData as ListingCreationAttributes
-        // );
         const [listing, created] = await Listing.upsert(
           listingData as ListingCreationAttributes
         );
@@ -192,48 +194,7 @@ app.post(
   }
 );
 
-// Add listing and associate it with a user
-// app.post("/listings/associate", async (req: Request, res: Response) => {
-//   try {
-//     const { title, link, pub_date }: ListingCreationAttributes = req.body;
-//     const { ...parameters }: ListingParametersCreationAttributes = req.body;
-
-//     // Check if all required fields are provided
-//     if (!title || !link || !pub_date || !parameters) {
-//       return res.status(400).json({ error: "Missing required fields" });
-//     }
-
-//     // Sync Firebase user with PostgreSQL
-//     const user = await syncFirebaseUser(req.body.firebaseUId, req.body.email);
-
-//     // Create listing parameters if they don't exist
-//     const listingParameters = await ListingParameters.create(parameters);
-
-//     // Create the new listing
-//     const newListing = await Listing.create({
-//       title,
-//       link,
-//       pub_date,
-//     });
-
-//     newListing.upsertParameters(listingParameters);
-
-//     // Associate the listing with the user
-//     await user.addListing(newListing);
-
-//     res
-//       .status(201)
-//       .json({ user: user, listing: newListing, parameters: listingParameters });
-//   } catch (error) {
-//     console.error("Error associating listing:", error);
-//     res
-//       .status(500)
-//       .json({ error: "An error occurred while associating the listing" });
-//   }
-// });
-
 // Get user filter
-
 app.get("/users/me/filter", authenticateFirebaseToken, async (req, res) => {
   let user = await User.findOne({ where: { firebaseUId: req.user?.uid } });
   if (!user) {
@@ -264,12 +225,6 @@ app.post("/users/sync", authenticateFirebaseToken, async (req, res) => {
     user = await User.create({ firebaseUId, email });
     return res.status(201).json(user);
   }
-
-  // // If the user exists, update the user's email if necessary
-  // if (user.email !== email) {
-  //   user.email = email;
-  //   await user.save();
-  // }
 
   return res.status(200).json(user);
 });
