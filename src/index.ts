@@ -20,21 +20,12 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json());
 app.use(cors());
 
-type ListingDataParameters = {
-  availability: Date;
-  furnished: boolean;
-  num_baths: number;
-  num_beds: number;
-  parking: boolean;
-};
-
 type ListingData = {
   hash?: string;
   title: string;
   link: string;
   pub_date: Date;
-  price: number;
-  parameters: ListingDataParameters;
+  parameters: ListingParametersCreationAttributes;
 };
 
 // Middleware to verify Firebase ID tokens
@@ -132,17 +123,30 @@ app.post(
         const hash: string = generateListingHash(listingData.link);
 
         // What is this hash used for ?
-        listingData.hash = hash as string; // Explicitly set hash as string
-        const [listing, created] = await Listing.upsert(
-          listingData as ListingCreationAttributes
-        );
-        if (created) {
-          console.log("Listing was created:", listing.id);
+        // listingData.hash = hash as string; // Explicitly set hash as string
+
+        const { title, link, pub_date } = listingData;
+
+        const existingListing = await Listing.findOne({ where: { hash } });
+
+        if (existingListing) {
+          console.log(
+            "Listing with this hash already exists:",
+            existingListing
+          );
+          // Handle the case where the listing already exists (e.g., return an error or update the listing)
         } else {
-          console.log("Listing was updated:", listing.id);
+          const createdListing = await Listing.create({
+            hash,
+            title,
+            link,
+            pub_date,
+          });
+
+          createdListing.upsertParameters(listingData.parameters);
+          createdListingIds.push(createdListing.id);
+          console.log("New listing created:", createdListing);
         }
-        listing.upsertParameters(listingData);
-        createdListingIds.push(listing.id);
       }
       res.status(201).json({ listings: createdListingIds });
     } catch (error) {

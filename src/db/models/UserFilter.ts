@@ -5,7 +5,7 @@ class UserFilter extends Model {
   declare id: number;
   declare UserId: number;
   public price_limit!: number | null;
-  public move_in_date!: Date | null;
+  public availability!: Date | null;
   public num_beds!: number[] | null;
   public num_baths!: number[] | null;
   public num_parking!: number[] | null;
@@ -56,7 +56,7 @@ UserFilter.init(
       type: DataTypes.ARRAY(DataTypes.INTEGER),
       allowNull: true,
     },
-    move_in_date: {
+    availability: {
       type: DataTypes.DATE,
       allowNull: true,
     },

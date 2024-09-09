@@ -5,7 +5,7 @@ import sequelize from "./initSequalize.js";
 interface ListingParametersAttributes {
   id: number;
   price: number;
-  move_in_date: Date;
+  availability: Date;
   num_baths: number;
   num_beds: number;
   furnished: boolean;
@@ -26,7 +26,7 @@ class ListingParameters
 {
   declare id: number;
   public price!: number;
-  public move_in_date!: Date;
+  public availability!: Date;
   public num_baths!: number;
   public num_beds!: number;
   public furnished!: boolean;
@@ -44,7 +44,7 @@ ListingParameters.init(
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
-    move_in_date: {
+    availability: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
