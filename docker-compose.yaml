@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  # NGINX reverse proxy service
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80" # Expose HTTP port 80
+      - "443:443" # Expose HTTPS port 443 (optional if you want to serve HTTPS)
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf # Mount your custom NGINX configuration file
+    depends_on:
+      - node
+    networks:
+      - app-network
+
+  # Node.js service
+  node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_USER: your_rds_username
+      POSTGRES_PASSWORD: your_rds_password
+      POSTGRES_DB: your_rds_dbname
+      POSTGRES_HOST: your-rds-endpoint.amazonaws.com
+      POSTGRES_PORT: 5432
+      PORT: 3000
+    expose:
+      - "3000" # Expose port 3000 for internal use by NGINX
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

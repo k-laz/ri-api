@@ -16,7 +16,7 @@ import generateListingHash from "./db/utils/hash.js";
 
 dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT || "3000", 10);
 app.use(bodyParser.json());
 app.use(cors());
 
@@ -255,6 +255,6 @@ app.put("/users/me/filter", authenticateFirebaseToken, async (req, res) => {
     .json({ message: "Filter updated successfully", filter: userFilter });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server is running on port ${PORT}`);
 });
