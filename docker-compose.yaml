@@ -20,12 +20,12 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      POSTGRES_USER: your_rds_username
-      POSTGRES_PASSWORD: your_rds_password
-      POSTGRES_DB: your_rds_dbname
-      POSTGRES_HOST: your-rds-endpoint.amazonaws.com
-      POSTGRES_PORT: 5432
-      PORT: 3000
+      POSTGRES_USER: ${POSTGRES_USER} # Use variable substitution
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432} # Default to 5432 if not set
+      PORT: ${PORT:-3000}
     expose:
       - "3000" # Expose port 3000 for internal use by NGINX
     networks:
