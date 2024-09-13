@@ -20,11 +20,11 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      POSTGRES_USER: ${POSTGRES_USER} # Use variable substitution
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT:-5432} # Default to 5432 if not set
+      DB_USER: ${POSTGRES_USER} # Use variable substitution
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      DB_HOST: ${POSTGRES_HOST}
+      DB_PORT: ${POSTGRES_PORT:-5432} # Default to 5432 if not set
       PORT: ${PORT:-3000}
     expose:
       - "3000" # Expose port 3000 for internal use by NGINX
