@@ -1,5 +1,3 @@
-# Dockerfile for Node.js App
-
 # Use the official Node.js image
 FROM node:20
 
@@ -12,14 +10,17 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy the rest of the application code
+# Copy the rest of your application code
 COPY . .
-
-# Build the TypeScript code
-RUN npm run build
 
 # Expose the port your app runs on
 EXPOSE 3000
 
-# Start the app
+# Run Prisma migrations
+RUN npx prisma migrate deploy
+
+# Build the TypeScript code
+RUN npm run build
+
+# Start the application
 CMD ["npm", "start"]
