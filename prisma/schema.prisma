@@ -15,37 +15,39 @@ datasource db {
 
 model User {
   id        Int       @id @default(autoincrement())
-  name      String
+  firebaseUId String @unique
   email     String    @unique
+  role      String 
   filter    UserFilter?
-  listings  UserListingTable[]
 }
 
 model UserFilter {
   id     Int     @id @default(autoincrement())
   filterName String
   user   User   @relation(fields: [userId], references: [id])
-  userId Int
+  userId Int @unique
 }
 
 model Listing {
   id                Int                 @id @default(autoincrement())
-  listingName       String
+  link              String              @unique
+  hash              String              @unique
+  title             String
+  pub_date          DateTime
+  
   listingParameters ListingParameters[]
-  users             UserListingTable[]
 }
 
 model ListingParameters {
   id             Int      @id @default(autoincrement())
-  parameterName  String
-  listing        Listing   @relation(fields: [listingId], references: [id])
-  listingId      Int
-}
-
-model UserListingTable {
-  id       Int      @id @default(autoincrement())
-  user     User     @relation(fields: [userId], references: [id])
-  userId   Int
-  listing  Listing  @relation(fields: [listingId], references: [id])
-  listingId Int
+  
+  price          Int
+  availability   DateTime
+  num_beds       Int
+  num_baths      Int
+  furnished      Boolean
+  parking        Boolean
+  
+  listingId      Int      @unique
+  listing        Listing  @relation(fields: [listingId], references: [id])
 }
