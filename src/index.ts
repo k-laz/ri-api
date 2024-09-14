@@ -83,6 +83,10 @@ const syncFirebaseUser = async (firebaseUid: string, email: string) => {
   return user;
 };
 
+app.get("/", async (req: Request, res) => {
+  res.status(200).json("it works");
+});
+
 app.get("/users/me", authenticateFirebaseToken, async (req: Request, res) => {
   try {
     // Get the Firebase user ID from the token
