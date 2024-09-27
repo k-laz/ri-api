@@ -1,0 +1,39 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node_app
+    working_dir: /usr/src/app
+    volumes:
+      - .:/usr/src/app # Mount current directory to the container
+      - /usr/src/app/node_modules # Avoid overwriting node_modules
+    ports:
+      - "8080:3000" # Map container's 3000 port to host's 8080 port
+    env_file:
+      - .env # Load environment variables from .env file
+    depends_on:
+      db:
+        condition: service_healthy # Wait until the db is healthy
+
+    command: npm run dev # Use the correct command to start your app in dev mode
+
+  db:
+    image: postgres:16-alpine # Use a lightweight Postgres image
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data # Persist Postgres data
+    ports:
+      - "5432:5432" # Expose PostgreSQL port to host
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata: # Define a persistent volume for PostgreSQL
