@@ -26,7 +26,8 @@ EXPOSE 3000
 RUN npm run build
 
 
-CMD ["sh", "./start.sh"]
+CMD ["npm start"]
+#CMD ["sh", "./start.sh"]
 
 
 # Run Prisma migrations at runtime
