@@ -11,7 +11,7 @@ services:
       - .:/usr/src/app # Mount current directory to the container
       - /usr/src/app/node_modules # Avoid overwriting node_modules
     ports:
-      - "8080:3000" # Map container's 3000 port to host's 8080 port
+      - "3000:3000" # Map container's 3000 port to host's 8080 port
     env_file:
       - .env # Load environment variables from .env file
     depends_on:
