@@ -1,0 +1,11 @@
+# flyctl launch added from .gitignore
+**/node_modules
+**/dist
+**/.env*
+**/config/serviceAccountKey.json
+# Elastic Beanstalk Files
+**/.elasticbeanstalk/*
+!**/.elasticbeanstalk/*.cfg.yml
+!**/.elasticbeanstalk/*.global.yml
+**/env.sh
+fly.toml

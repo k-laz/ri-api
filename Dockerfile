@@ -13,8 +13,10 @@ RUN npm install
 # Copy the rest of your application code
 COPY . .
 
-# Run Prisma migrations
-#RUN npx prisma migrate deploy
+# Give execution permissions
+RUN chmod +x ./start.sh
+
+# Generate Prisma Client
 RUN npx prisma generate
 
 # Expose the port your app runs on
@@ -23,5 +25,10 @@ EXPOSE 3000
 # Build the TypeScript code
 RUN npm run build
 
-# Start the application
-CMD ["./start.sh", "npm", "start"]
+
+CMD ["sh", "./start.sh"]
+
+
+# Run Prisma migrations at runtime
+#CMD ["sh", "-c", "echo Running Prisma Migrations && npx prisma migrate deploy && echo Migrations Done && npm start"]
+

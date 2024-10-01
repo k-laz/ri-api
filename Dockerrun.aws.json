@@ -1,0 +1,64 @@
+{
+  "AWSEBDockerrunVersion": 2,
+  "containerDefinitions": [
+    {
+      "name": "api",
+      "image": "node:20",
+      "essential": true,
+      "memory": 512,
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "hostPort": 80
+        }
+      ],
+      "environment": [
+        {
+          "name": "DATABASE_URL",
+          "value": ""
+        }
+      ],
+      "links": ["postgres-db"]
+    },
+    {
+      "name": "postgres-db",
+      "image": "postgres:latest",
+      "essential": true,
+      "memory": 512,
+      "portMappings": [
+        {
+          "containerPort": 5432,
+          "hostPort": 5432
+        }
+      ],
+      "environment": [
+        {
+          "name": "POSTGRES_USER",
+          "value": ""
+        },
+        {
+          "name": "POSTGRES_PASSWORD",
+          "value": ""
+        },
+        {
+          "name": "POSTGRES_DB",
+          "value": ""
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "pgdata",
+          "containerPath": "/var/lib/postgresql/data"
+        }
+      ]
+    }
+  ],
+  "volumes": [
+    {
+      "name": "pgdata",
+      "host": {
+        "sourcePath": "/var/app/pgdata"
+      }
+    }
+  ]
+}
