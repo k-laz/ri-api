@@ -1,3 +1,3 @@
 #!/bin/sh
 npx prisma migrate deploy
-npm start
+npm run start

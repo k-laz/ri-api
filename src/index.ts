@@ -7,7 +7,7 @@ import listingRoutes from "./routes/listings.js";
 
 dotenv.config();
 const app = express();
-const PORT = parseInt(process.env.PORT || "8080", 10);
+const PORT = parseInt(process.env.PORT || "3000", 10);
 
 app.use(bodyParser.json());
 app.use(cors());

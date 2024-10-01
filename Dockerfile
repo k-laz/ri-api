@@ -1,5 +1,5 @@
 # Use the official Node.js image
-FROM node:20
+FROM node:20-alpine
 
 # Set the working directory
 WORKDIR /usr/src/app
@@ -25,11 +25,5 @@ EXPOSE 3000
 # Build the TypeScript code
 RUN npm run build
 
-
-CMD ["npm start"]
-#CMD ["sh", "./start.sh"]
-
-
-# Run Prisma migrations at runtime
-#CMD ["sh", "-c", "echo Running Prisma Migrations && npx prisma migrate deploy && echo Migrations Done && npm start"]
-
+#CMD ["npm start"]
+CMD ["sh", "./start.sh"]
