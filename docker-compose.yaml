@@ -10,8 +10,8 @@ services:
       - /usr/src/app/node_modules # Avoid overwriting node_modules
     ports:
       - "3000:3000" # Map container's 3000 port to host's 8080 port
-    env_file:
-      - .env # Load environment variables from .env file
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-db:5432/${POSTGRES_DB}
     depends_on:
       db:
         condition: service_healthy # Wait until the db is healthy
