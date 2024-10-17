@@ -1,5 +1,4 @@
 import { Listing, prisma } from "../models/index.js";
-import nodemailer from "nodemailer";
 import AWS from "aws-sdk";
 
 export async function filterListing(listing: Listing, userFilter: any) {
@@ -117,7 +116,7 @@ const ses = new AWS.SES({ region: "us-west-2" });
  * @param {string} subject - Subject of the email.
  * @param {string} body - Body content of the email.
  */
-async function sendEmail(
+export async function sendEmail(
   toEmail: string,
   subject: string,
   body: string
@@ -148,41 +147,3 @@ async function sendEmail(
     }
   }
 }
-
-// // Create the transporter using nodemailer
-// const transporter = nodemailer.createTransport({
-//   service: "gmail", // For Gmail; use 'smtp' if you're using another email provider
-//   auth: {
-//     user: process.env.EMAIL_USER, // Your email address
-//     pass: process.env.EMAIL_PASS, // Your email password or app-specific password
-//   },
-// });
-
-// /**
-//  * Sends an email to a recipient.
-//  *
-//  * @param recipient - The email address of the recipient
-//  * @param subject - The subject of the email
-//  * @param content - The content/body of the email
-//  */
-// export const sendEmail = async (
-//   recipient: string,
-//   subject: string,
-//   content: string
-// ): Promise<void> => {
-//   try {
-//     const mailOptions = {
-//       from: process.env.EMAIL_USER, // Sender address
-//       to: recipient, // Recipient address
-//       subject: subject, // Subject of the email
-//       text: content, // Plain text body
-//     };
-
-//     // Send the email
-//     await transporter.sendMail(mailOptions);
-//     console.log(`Email sent successfully to ${recipient}`);
-//   } catch (error) {
-//     console.error("Error sending email:", error);
-//     throw new Error("Failed to send email.");
-//   }
-// };

@@ -5,7 +5,7 @@ import {
   authorizeAdmin,
 } from "../middleware/auth.js";
 import generateListingHash from "../utils/hash.js";
-import { getFilteredListings } from "../utils/helper.js";
+import { getAllFilteredListings } from "../utils/helper.js";
 
 const router = Router();
 
@@ -46,7 +46,7 @@ router.get(
       for (const user of users) {
         if (user.filter) {
           // Use the refactored function to get the filtered listings
-          const listings = await getFilteredListings(user.filter);
+          const listings = await getAllFilteredListings(user.filter);
           listingsByUser[user.id] = listings;
         }
       }
