@@ -1,6 +1,0 @@
--- AlterTable
-ALTER TABLE "ListingParameters" ALTER COLUMN "num_beds" DROP NOT NULL,
-ALTER COLUMN "num_baths" DROP NOT NULL,
-ALTER COLUMN "furnished" DROP NOT NULL,
-ALTER COLUMN "pets" DROP NOT NULL,
-ALTER COLUMN "parking" DROP NOT NULL;

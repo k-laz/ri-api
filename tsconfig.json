@@ -10,5 +10,11 @@
     "typeRoots": ["./node_modules/@types", "./custom.d.ts"],
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "Neighbourhood.ts", "wipe.ts", "custom.d.ts"]
+  "include": [
+    "src/**/*",
+    "Neighbourhood.ts",
+    "wipe.ts",
+    "custom.d.ts",
+    "testMail.js"
+  ]
 }
