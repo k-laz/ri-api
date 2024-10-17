@@ -1,12 +1,47 @@
 import { Router, Request, Response } from "express";
 import { prisma, UserFilter } from "../models/index.js";
 import { authenticateFirebaseToken } from "../middleware/auth.js"; // Middleware for Firebase authentication
-import { getFilteredListings } from "../utils/helper.js";
+import { getAllFilteredListings } from "../utils/helper.js";
 
 const router = Router();
 
-router.get("/test", async (req: Request, res: Response) => {
-  res.status(200).json("test route");
+router.get(
+  "/test",
+  authenticateFirebaseToken,
+  async (req: Request, res: Response) => {
+    res.status(200).json("test route");
+  }
+);
+
+router.post("/sync", async (req: Request, res: Response) => {
+  try {
+    const { firebaseUId, email } = req.body;
+
+    // Find the user by Firebase UID and include the associated filters and listings
+    const user = await prisma.user.findUnique({
+      where: { firebaseUId },
+    });
+
+    if (!user) {
+      const newUser = await prisma.user.create({
+        data: {
+          firebaseUId,
+          email,
+          role: "user",
+        },
+      });
+
+      res
+        .status(201)
+        .json({ message: "User created successfully", user: newUser });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
 });
 
 router.post("/add", async (req: Request, res: Response) => {
@@ -158,7 +193,7 @@ router.get(
         return res.status(404).json({ error: "User or filters not found" });
       }
 
-      const listings = await getFilteredListings(user.filter);
+      const listings = await getAllFilteredListings(user.filter);
 
       if (!listings.length) {
         return res

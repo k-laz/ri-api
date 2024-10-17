@@ -11,14 +11,6 @@ const PORT = parseInt(process.env.PORT || "3000", 10);
 
 app.use(bodyParser.json());
 app.use(cors());
-// app.use(
-//   cors({
-//     origin: "http://localhost:5173", // Allow your frontend's URL
-//     methods: ["GET", "POST", "PUT", "DELETE"], // Specify the allowed methods
-//     credentials: true, // Allow credentials if necessary (cookies, etc.)
-//     allowedHeaders: ["Content-Type", "Authorization"], // Include any custom headers if needed
-//   })
-// );
 
 app.options("*", cors());
 

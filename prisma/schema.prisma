@@ -45,6 +45,7 @@ model Listing {
   hash              String              @unique
   title             String
   pub_date          DateTime
+  isSent            Boolean             @default(false)
   
   listingParameters ListingParameters[]
 }
