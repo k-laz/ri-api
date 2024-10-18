@@ -1,5 +1,9 @@
 // listingModel.ts
-import { QueryCommand, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import {
+  QueryCommand,
+  PutItemCommand,
+  AttributeValue,
+} from "@aws-sdk/client-dynamodb";
 import dynamodbClient from "../dynamodbClient.js";
 import { v4 as uuidv4 } from "uuid";
 import { UserFilter } from "./User.js";
@@ -68,6 +72,34 @@ export const putListing = async (listingData: Listing): Promise<void> => {
   }
 };
 
+// Function to convert DynamoDB AttributeValues to Listing
+const convertDynamoItemToListing = (
+  item: Record<string, AttributeValue>
+): Listing => {
+  return {
+    link: item.link.S || "",
+    hash: item.hash.S || "",
+    title: item.title.S || "",
+    pub_date: item.pub_date.S || "",
+    isSent: item.isSent?.BOOL || false,
+    listingParameters: {
+      price: parseInt(item.listingParameters.M?.price.N || "0"),
+      availability: item.listingParameters.M?.availability.S || "",
+      num_beds: item.listingParameters.M?.num_beds?.N
+        ? parseInt(item.listingParameters.M.num_beds.N)
+        : undefined,
+      num_baths: item.listingParameters.M?.num_baths?.N
+        ? parseInt(item.listingParameters.M.num_baths.N)
+        : undefined,
+      parking: item.listingParameters.M?.parking?.N
+        ? parseInt(item.listingParameters.M.parking.N)
+        : undefined,
+      furnished: item.listingParameters.M?.furnished?.BOOL || false,
+      pets: item.listingParameters.M?.pets?.BOOL || false,
+    },
+  };
+};
+
 // Query listings based on user filters
 export const queryListingsByFilters = async (
   filters: UserFilter
@@ -94,7 +126,8 @@ export const queryListingsByFilters = async (
 
   try {
     const result = await dynamodbClient.send(command);
-    return result.Items as Listing[];
+    // Map the DynamoDB response to the Listing type
+    return result.Items?.map(convertDynamoItemToListing) || null;
   } catch (error) {
     console.error("Error querying listings:", error);
     return null;
