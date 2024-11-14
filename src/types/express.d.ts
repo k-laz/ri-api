@@ -1,4 +1,4 @@
-// custom.d.ts
+// src/types/express.d.ts
 import { Request } from "express";
 
 declare global {
@@ -6,7 +6,6 @@ declare global {
     interface Request {
       user?: {
         uid: string;
-        // Add other properties if needed
       };
     }
   }

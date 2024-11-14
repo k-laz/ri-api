@@ -83,9 +83,9 @@ router.post(
           where: { hash },
         });
 
-        listingData.parameters.availability = new Date(
-          listingData.parameters.availability
-        );
+        const availability = listingData.parameters.availability
+          ? new Date(listingData.parameters.availability)
+          : null;
 
         if (!existingListing) {
           // Create a new listing if it does not exist
@@ -98,7 +98,7 @@ router.post(
               listingParameters: {
                 create: {
                   price: listingData.parameters.price,
-                  availability: new Date(listingData.parameters.availability),
+                  availability: availability,
                   furnished: listingData.parameters.furnished,
                   num_beds: listingData.parameters.num_beds || null, // Default to null if not provided
                   num_baths: listingData.parameters.num_baths || null, // Default to null if not provided
