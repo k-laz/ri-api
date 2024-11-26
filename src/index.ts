@@ -4,6 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import userRoutes from "./routes/users.js";
 import listingRoutes from "./routes/listings.js";
+import adminRoutes from "./routes/admin.js";
 
 dotenv.config();
 const app = express();
@@ -17,6 +18,7 @@ app.options("*", cors());
 // Use Routes
 app.use("/users", userRoutes);
 app.use("/listings", listingRoutes);
+app.use("/admin", adminRoutes);
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on port ${PORT}`);

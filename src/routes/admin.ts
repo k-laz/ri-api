@@ -4,11 +4,29 @@ import {
   authenticateFirebaseToken,
   authorizeAdmin,
 } from "../middleware/auth.js";
-import { filterListing, sendEmail } from "../utils/helper.js";
+import { filterListing } from "../utils/helper.js";
+import { EmailService } from "../utils/mailer.js";
 
 const router = Router();
 
-// New endpoint to send newsletters based on user filters
+const emailService = new EmailService();
+
+router.post("/testmail", async (req: Request, res: Response) => {
+  try {
+    await emailService.sendEmail(
+      "pavankhiani96@gmail.com",
+      "Newsletter",
+      "<h1>Hello!</h1>"
+    );
+    res.status(200).json({ message: "Newsletter emails sent successfully." });
+  } catch (error) {
+    console.error("Error sending newsletter:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while sending newsletters." });
+  }
+});
+
 router.post(
   "/send-newsletter",
   authenticateFirebaseToken,
@@ -114,3 +132,5 @@ const generateEmailContent = (listings: Listing[]): string => {
     .map((listing) => `- ${listing.title} | ${listing.link}`)
     .join("\n");
 };
+
+export default router;
