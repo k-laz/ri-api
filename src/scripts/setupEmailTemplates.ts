@@ -1,5 +1,5 @@
 import { EmailService } from "../services/emailService.js";
-import { emailTemplates } from "./emailTemplates.js";
+import { emailTemplates } from "../utils/emailTemplates.js";
 
 async function setupTemplates() {
   try {

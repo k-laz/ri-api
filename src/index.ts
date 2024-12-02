@@ -6,6 +6,7 @@ import userRoutes from "./routes/users.js";
 import listingRoutes from "./routes/listings.js";
 import adminRoutes from "./routes/admin.js";
 import filterRoutes from "./routes/filters.js";
+import authRoutes from "./routes/auth.js";
 
 dotenv.config();
 const app = express();
@@ -18,6 +19,7 @@ app.options("*", cors());
 
 // Use Routes
 app.use("/users", userRoutes);
+app.use("/auth", authRoutes);
 app.use("/filters", filterRoutes);
 app.use("/listings", listingRoutes);
 app.use("/admin", adminRoutes);

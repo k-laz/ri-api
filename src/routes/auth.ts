@@ -18,7 +18,7 @@ router.post("/resend-verification", async (req: Request, res: Response) => {
     // Update user with new token
     await prisma.user.update({
       where: {
-        email,
+        email: email,
       },
       data: {
         verificationToken: token,
@@ -51,6 +51,8 @@ router.post("/verify-email", async (req: Request, res: Response) => {
     if (!decoded) {
       return res.status(400).json({ error: "Invalid or expired token" });
     }
+
+    console.log(decoded);
 
     // Update user verification status
     const user = await prisma.user.update({

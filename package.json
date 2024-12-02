@@ -6,11 +6,9 @@
   "type": "module",
   "scripts": {
     "build": "npx tsc",
-    "seed": "npm run build && node dist/db/utils/seed.js",
     "start": "node dist/index.js",
     "dev": "npx tsc -w & nodemon dist/index.js",
-    "wipe": "npm run build && node dist/db/utils/wipe.js",
-    "sync": "npm run build && node dist/db/models/index.js"
+    "setup-email": "ts-node src/scripts/setupEmailTemplates.js"
   },
   "keywords": [],
   "author": "",

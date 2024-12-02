@@ -5,8 +5,6 @@ import {
   getAllFilteredListings,
   sendVerificationEmail,
 } from "../utils/helper.js";
-import { emailTemplates } from "../utils/emailTemplates.js";
-import { EmailService } from "../services/emailService.js";
 import { generateVerificationToken } from "../utils/tokenUtils.js";
 
 const router = Router();
@@ -169,7 +167,11 @@ router.get(
       }
 
       // For now user data is just filter
-      const userData = { filter: user.filter };
+      const userData = {
+        filter: user.filter,
+        email: user.email,
+        isVerified: user.isVerified,
+      };
 
       return res.status(200).json(userData); // Added return here
     } catch (error) {
@@ -213,44 +215,6 @@ router.get(
       if (error instanceof Error) {
         res.status(500).json({ error: error.message });
       }
-    }
-  }
-);
-
-router.put(
-  "/unsubscribe/:firebaseUId",
-  authenticateFirebaseToken,
-  async (req: Request, res: Response) => {
-    try {
-      const firebaseUId = req.user?.uid;
-
-      // Find the user first to make sure they exist
-      const existingUser = await prisma.user.findUnique({
-        where: { firebaseUId },
-      });
-
-      if (!existingUser) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      await prisma.user.update({
-        where: {
-          id: existingUser.id,
-        },
-        data: {
-          verified: false,
-        },
-      });
-
-      return res.status(200).json({
-        message: "User and all related data successfully deleted",
-      });
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      return res.status(500).json({
-        error:
-          error instanceof Error ? error.message : "An unknown error occurred",
-      });
     }
   }
 );
