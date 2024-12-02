@@ -19,6 +19,10 @@ model User {
   firebaseUId String @unique
   email     String    @unique
   role      String 
+  verificationToken String?
+  verificationTokenExpires DateTime?
+  isVerified  Boolean   @default(false)
+  
   filter    UserFilter?
 }
 
@@ -27,13 +31,14 @@ model UserFilter {
   userId          Int      @unique
   price_limit     Float?
   move_in_date    DateTime?
+  length_of_stay  String?
   num_baths Int[] //(0 | 1 | 2 | 3 | 4)[];
   num_beds Int[] //(0 | 1 | 2 | 3 | 4)[];
   num_parking Int[] //(0 | 1 | 2 | 3 | 4)[];
   furnished       Boolean?
   pets            Boolean?
   gender_preference String?
-  user            User     @relation(fields: [userId], references: [id])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 

@@ -1,65 +1,12 @@
 import { Router, Request, Response } from "express";
-import { prisma, UserFilter } from "../models/index.js";
+import { prisma } from "../models/index.js";
 import { authenticateFirebaseToken } from "../middleware/auth.js"; // Middleware for Firebase authentication
 import { getAllFilteredListings } from "../utils/helper.js";
-import { Prisma } from "@prisma/client";
-
-import { z } from "zod";
+import { emailTemplates } from "../utils/emailTemplates.js";
+import { EmailService } from "../services/emailService.js";
+import { generateVerificationToken } from "../utils/tokenUtils.js";
 
 const router = Router();
-type ValidNumber = 0 | 1 | 2 | 3 | 4;
-const validNumbers: ValidNumber[] = [0, 1, 2, 3, 4];
-
-const FilterSchema = z.object({
-  price_limit: z
-    .number()
-    .nonnegative("Price limit must be 0 or greater")
-    .optional(),
-  move_in_date: z
-    .string()
-    .transform((val) => val || undefined)
-    .optional(),
-  num_beds: z
-    .array(
-      // Direct number validation
-      z
-        .number()
-        .int()
-        .min(0)
-        .max(4)
-        .refine(
-          (n): n is ValidNumber => validNumbers.includes(n as ValidNumber),
-          {
-            message: "Each value must be 0, 1, 2, 3, or 4",
-          }
-        )
-    )
-    .optional(),
-  num_baths: z
-    .array(z.number().int().min(0).max(4))
-    .refine(
-      (arr) => arr.every((n) => validNumbers.includes(n as ValidNumber)),
-      {
-        message: "Each value must be 0, 1, 2, 3, or 4",
-      }
-    )
-    .optional(),
-  num_parking: z
-    .array(z.number().int().min(0).max(4))
-    .refine(
-      (arr) => arr.every((n) => validNumbers.includes(n as ValidNumber)),
-      {
-        message: "Each value must be 0, 1, 2, 3, or 4",
-      }
-    )
-    .optional(),
-
-  furnished: z.boolean().optional(),
-  pets: z.boolean().optional(),
-  gender_preference: z.enum(["male", "female", "any", ""]).optional(),
-});
-
-type FilterInput = z.infer<typeof FilterSchema>;
 
 router.get(
   "/test",
@@ -69,6 +16,7 @@ router.get(
   }
 );
 
+// Sync user with backend
 router.post("/sync", async (req: Request, res: Response) => {
   try {
     const { firebaseUId, email } = req.body;
@@ -79,11 +27,18 @@ router.post("/sync", async (req: Request, res: Response) => {
     });
 
     if (!user) {
+      // Generate verification token
+      const verificationToken = generateVerificationToken();
+      const tokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
       const newUser = await prisma.user.create({
         data: {
-          firebaseUId: firebaseUId, // Make sure these match your schema
+          firebaseUId: firebaseUId,
           email: email,
           role: "user",
+          verificationToken,
+          verificationTokenExpires: tokenExpiration,
+          isVerified: false,
         },
       });
       return res
@@ -99,7 +54,8 @@ router.post("/sync", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/add", async (req: Request, res: Response) => {
+// Create new user
+router.post("/create", async (req: Request, res: Response) => {
   try {
     const { firebaseUId, email } = req.body;
 
@@ -111,26 +67,40 @@ router.post("/add", async (req: Request, res: Response) => {
     }
 
     // Check if the user already exists (by email or Firebase UID)
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [{ email }, { firebaseUId }],
-      },
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
     });
 
     if (existingUser) {
       return res
         .status(409)
-        .json({ error: "User with this email or Firebase UID already exists" });
+        .json({ error: "User with this email already exists" });
     }
+
+    // Generate verification token
+    const verificationToken = generateVerificationToken();
+    const tokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Create a new user, including the required role field
     const newUser = await prisma.user.create({
       data: {
-        firebaseUId: firebaseUId, // Make sure these match your schema
+        firebaseUId: firebaseUId,
         email: email,
         role: "user",
+        verificationToken,
+        verificationTokenExpires: tokenExpiration,
+        isVerified: false,
       },
     });
+
+    // Send verification email
+    await EmailService.sendTemplatedEmail(
+      newUser.email,
+      emailTemplates.verification.name,
+      {
+        verificationLink: `${process.env.APP_URL}/verify-email?token=${verificationToken}`,
+      }
+    );
 
     return res
       .status(201)
@@ -144,26 +114,40 @@ router.post("/add", async (req: Request, res: Response) => {
   }
 });
 
-router.get(
-  "/me",
+// TODO: figure out a way to protect this route - who can delete users and what inits it?
+// Delete User
+router.delete(
+  "/delete", // "/delete/:firebaseUId",
   authenticateFirebaseToken,
   async (req: Request, res: Response) => {
     try {
       const firebaseUId = req.user?.uid;
+      // const { firebaseUId } = req.params;
 
-      console.log(firebaseUId);
-      // Find the user by Firebase UID and include the associated filters and listings
-      const user = await prisma.user.findUnique({
+      if (!firebaseUId) {
+        return res.status(400).json({ error: "Firebase UID is required" });
+      }
+
+      // Find the user first to make sure they exist
+      const existingUser = await prisma.user.findUnique({
         where: { firebaseUId },
       });
 
-      if (!user) {
+      if (!existingUser) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      return res.status(200).json(user); // Added return here
+      await prisma.user.delete({
+        where: {
+          id: existingUser.id,
+        },
+      });
+
+      return res.status(200).json({
+        message: "User and all related data successfully deleted",
+      });
     } catch (error) {
-      // Added return here and handling for non-Error objects
+      console.error("Error deleting user:", error);
       return res.status(500).json({
         error:
           error instanceof Error ? error.message : "An unknown error occurred",
@@ -172,6 +156,7 @@ router.get(
   }
 );
 
+// Get User Data
 router.get(
   "/me/data",
   authenticateFirebaseToken,
@@ -179,17 +164,20 @@ router.get(
     try {
       const firebaseUId = req.user?.uid;
 
-      // Find the user by Firebase UID and include the associated filters
+      // Find the user by Firebase UID and include the associated filters and listings
       const user = await prisma.user.findUnique({
         where: { firebaseUId },
-        include: { filter: true },
+        include: { filter: true }, // Assuming "filter" is the name of the relation
       });
 
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      res.status(200).json(user);
+      // For now user data is just filter
+      const userData = { filter: user.filter };
+
+      return res.status(200).json(userData); // Added return here
     } catch (error) {
       // Added return here and handling for non-Error objects
       return res.status(500).json({
@@ -200,121 +188,7 @@ router.get(
   }
 );
 
-router.put(
-  "/me/filter",
-  authenticateFirebaseToken,
-  async (req: Request, res: Response) => {
-    try {
-      const firebaseUId = req.user?.uid;
-
-      if (!firebaseUId) {
-        return res.status(401).json({ error: "No authenticated user found" });
-      }
-
-      // Validate the input data
-      const validationResult = FilterSchema.safeParse(req.body.filter);
-
-      if (!validationResult.success) {
-        console.log(req.body.filter);
-        return res.status(400).json({
-          error: "Invalid filter data",
-          details: validationResult.error.errors,
-        });
-      }
-
-      const filterData = validationResult.data;
-
-      // Find the user by Firebase UID
-      const user = await prisma.user.findUnique({
-        where: { firebaseUId },
-      });
-
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      // Prepare update data using Prisma's types
-      const updateData: Prisma.UserFilterUpdateInput = {
-        price_limit:
-          filterData.price_limit !== undefined
-            ? { set: filterData.price_limit }
-            : undefined,
-        move_in_date:
-          filterData.move_in_date !== undefined
-            ? { set: new Date(filterData.move_in_date) }
-            : undefined,
-        num_baths:
-          filterData.num_baths !== undefined
-            ? { set: filterData.num_baths }
-            : undefined,
-        num_beds:
-          filterData.num_beds !== undefined
-            ? { set: filterData.num_beds }
-            : undefined,
-        num_parking:
-          filterData.num_parking !== undefined
-            ? { set: filterData.num_parking }
-            : undefined,
-        furnished:
-          filterData.furnished !== undefined
-            ? { set: filterData.furnished }
-            : undefined,
-        pets:
-          filterData.pets !== undefined ? { set: filterData.pets } : undefined,
-        gender_preference:
-          filterData.gender_preference !== undefined
-            ? { set: filterData.gender_preference }
-            : undefined,
-      };
-
-      // Check if the user already has a filter
-      const existingFilter = await prisma.userFilter.findUnique({
-        where: { userId: user.id },
-      });
-
-      let updatedFilter;
-
-      if (existingFilter) {
-        updatedFilter = await prisma.userFilter.update({
-          where: { userId: user.id },
-          data: updateData,
-        });
-      } else {
-        // For create operation, we need to transform the data differently
-        const createData: Prisma.UserFilterCreateInput = {
-          price_limit: filterData.price_limit,
-          move_in_date: filterData.move_in_date
-            ? new Date(filterData.move_in_date)
-            : undefined,
-          num_baths: filterData.num_baths,
-          num_beds: filterData.num_beds,
-          num_parking: filterData.num_parking,
-          furnished: filterData.furnished,
-          pets: filterData.pets,
-          gender_preference: filterData.gender_preference,
-          user: {
-            connect: {
-              id: user.id,
-            },
-          },
-        };
-
-        updatedFilter = await prisma.userFilter.create({
-          data: createData,
-        });
-      }
-
-      return res.status(200).json(updatedFilter);
-    } catch (error) {
-      console.error("Filter update error:", error);
-      return res.status(500).json({
-        error:
-          error instanceof Error ? error.message : "An unknown error occurred",
-      });
-    }
-  }
-);
-
+// Get User Listings
 router.get(
   "me/listings",
   authenticateFirebaseToken,
@@ -349,30 +223,50 @@ router.get(
   }
 );
 
-router.get(
-  "/me/filter",
+router.put(
+  "/unsubscribe/:firebaseUId",
   authenticateFirebaseToken,
   async (req: Request, res: Response) => {
     try {
       const firebaseUId = req.user?.uid;
 
-      // Find the user by Firebase UID and include the associated filters
-      const user = await prisma.user.findUnique({
+      // Find the user first to make sure they exist
+      const existingUser = await prisma.user.findUnique({
         where: { firebaseUId },
-        include: { filter: true }, // Assuming "filter" is the name of the relation
       });
 
-      if (!user) {
+      if (!existingUser) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      res.status(200).json(user.filter);
+      await prisma.user.update({
+        where: {
+          id: existingUser.id,
+        },
+        data: {
+          verified: false,
+        },
+      });
+
+      return res.status(200).json({
+        message: "User and all related data successfully deleted",
+      });
     } catch (error) {
-      if (error instanceof Error) {
-        res.status(500).json({ error: error.message });
-      }
+      console.error("Error deleting user:", error);
+      return res.status(500).json({
+        error:
+          error instanceof Error ? error.message : "An unknown error occurred",
+      });
     }
   }
 );
+
+// Optional: Add an error handler middleware
+router.use((error: Error, req: Request, res: Response, next: Function) => {
+  console.error("User creation error:", error);
+  res.status(500).json({
+    error: "Internal server error during user creation",
+  });
+});
 
 export default router;

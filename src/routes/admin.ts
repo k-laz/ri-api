@@ -5,27 +5,27 @@ import {
   authorizeAdmin,
 } from "../middleware/auth.js";
 import { filterListing } from "../utils/helper.js";
-import { EmailService } from "../utils/mailer.js";
+import { EmailService } from "../services/emailService.js";
 
 const router = Router();
 
 const emailService = new EmailService();
 
-router.post("/testmail", async (req: Request, res: Response) => {
-  try {
-    await emailService.sendEmail(
-      "pavankhiani96@gmail.com",
-      "Newsletter",
-      "<h1>Hello!</h1>"
-    );
-    res.status(200).json({ message: "Newsletter emails sent successfully." });
-  } catch (error) {
-    console.error("Error sending newsletter:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while sending newsletters." });
-  }
-});
+// router.post("/testmail", async (req: Request, res: Response) => {
+//   try {
+//     await emailService.sendEmail(
+//       "klazarev2000@gmail.com",
+//       "Newsletter",
+//       "<h1>Hello!</h1>"
+//     );
+//     res.status(200).json({ message: "Newsletter emails sent successfully." });
+//   } catch (error) {
+//     console.error("Error sending newsletter:", error);
+//     res
+//       .status(500)
+//       .json({ error: "An error occurred while sending newsletters." });
+//   }
+// });
 
 router.post(
   "/send-newsletter",
@@ -86,7 +86,7 @@ router.post(
 
                 try {
                   // Send the email (assumes you have an email service)
-                  await sendEmail(
+                  await emailService.sendEmail(
                     user.email,
                     "Your Matched Rental Listings",
                     emailContent
