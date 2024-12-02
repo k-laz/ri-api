@@ -1,7 +1,40 @@
 import { Request, Response, Router } from "express";
 import { prisma } from "../models/index.js";
+import { sendVerificationEmail } from "../utils/helper.js";
+import {
+  generateVerificationToken,
+  verifyJWTToken,
+} from "../utils/tokenUtils.js";
 
 const router = Router();
+
+router.post("/resend-verification", async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    // Generate new token
+    const { token, expiresAt } = generateVerificationToken(email);
+
+    // Update user with new token
+    await prisma.user.update({
+      where: {
+        email,
+      },
+      data: {
+        verificationToken: token,
+        verificationTokenExpires: expiresAt,
+      },
+    });
+
+    // Send new verification email
+    await sendVerificationEmail(email, token);
+
+    res.json({ message: "Verification email resent" });
+  } catch (error) {
+    console.error("Resend verification error:", error);
+    res.status(500).json({ error: "Error resending verification email" });
+  }
+});
 
 router.post("/verify-email", async (req: Request, res: Response) => {
   try {
@@ -13,31 +46,16 @@ router.post("/verify-email", async (req: Request, res: Response) => {
       });
     }
 
-    const user = await prisma.user.findFirst({
-      where: {
-        verificationToken: token,
-        verificationTokenExpires: {
-          // checks if the verification is still valid
-          gt: new Date(),
-        },
-      },
-      select: {
-        id: true,
-        email: true,
-        isVerified: true,
-      },
-    });
+    const decoded = verifyJWTToken(token);
 
-    if (!user) {
-      return res.status(400).json({
-        error: "Invalid or expired verification token",
-      });
+    if (!decoded) {
+      return res.status(400).json({ error: "Invalid or expired token" });
     }
 
     // Update user verification status
-    await prisma.user.update({
+    const user = await prisma.user.update({
       where: {
-        id: user.id,
+        email: decoded.email,
       },
       data: {
         isVerified: true,

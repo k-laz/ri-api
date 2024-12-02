@@ -1,7 +1,10 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../models/index.js";
 import { authenticateFirebaseToken } from "../middleware/auth.js"; // Middleware for Firebase authentication
-import { getAllFilteredListings } from "../utils/helper.js";
+import {
+  getAllFilteredListings,
+  sendVerificationEmail,
+} from "../utils/helper.js";
 import { emailTemplates } from "../utils/emailTemplates.js";
 import { EmailService } from "../services/emailService.js";
 import { generateVerificationToken } from "../utils/tokenUtils.js";
@@ -28,16 +31,15 @@ router.post("/sync", async (req: Request, res: Response) => {
 
     if (!user) {
       // Generate verification token
-      const verificationToken = generateVerificationToken();
-      const tokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      const { token, expiresAt } = generateVerificationToken(email);
 
       const newUser = await prisma.user.create({
         data: {
           firebaseUId: firebaseUId,
           email: email,
           role: "user",
-          verificationToken,
-          verificationTokenExpires: tokenExpiration,
+          verificationToken: token,
+          verificationTokenExpires: expiresAt,
           isVerified: false,
         },
       });
@@ -78,8 +80,7 @@ router.post("/create", async (req: Request, res: Response) => {
     }
 
     // Generate verification token
-    const verificationToken = generateVerificationToken();
-    const tokenExpiration = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const { token, expiresAt } = generateVerificationToken(email);
 
     // Create a new user, including the required role field
     const newUser = await prisma.user.create({
@@ -87,20 +88,13 @@ router.post("/create", async (req: Request, res: Response) => {
         firebaseUId: firebaseUId,
         email: email,
         role: "user",
-        verificationToken,
-        verificationTokenExpires: tokenExpiration,
+        verificationToken: token,
+        verificationTokenExpires: expiresAt,
         isVerified: false,
       },
     });
 
-    // Send verification email
-    await EmailService.sendTemplatedEmail(
-      newUser.email,
-      emailTemplates.verification.name,
-      {
-        verificationLink: `${process.env.APP_URL}/verify-email?token=${verificationToken}`,
-      }
-    );
+    await sendVerificationEmail(newUser.email, token);
 
     return res
       .status(201)

@@ -1,4 +1,6 @@
 import { Listing, prisma } from "../models/index.js";
+import { EmailService } from "../services/emailService.js";
+import { emailTemplates } from "./emailTemplates.js";
 
 export async function filterListing(listing: Listing, userFilter: any) {
   try {
@@ -104,4 +106,18 @@ export async function getAllFilteredListings(userFilter: any) {
     console.error("Error fetching filtered listings:", error);
     throw new Error("Error fetching filtered listings");
   }
+}
+
+export async function sendVerificationEmail(
+  email: string,
+  verificationToken: string
+) {
+  // Send verification email
+  await EmailService.sendTemplatedEmail(
+    email,
+    emailTemplates.verification.name,
+    {
+      verificationLink: `${process.env.APP_URL}/verify-email?token=${verificationToken}`,
+    }
+  );
 }
