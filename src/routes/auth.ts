@@ -1,10 +1,10 @@
 import { Request, Response, Router } from "express";
 import { prisma } from "../models/index.js";
-import { sendVerificationEmail } from "../utils/helper.js";
 import {
   generateVerificationToken,
   verifyJWTToken,
 } from "../utils/tokenUtils.js";
+import { sendVerificationEmail } from "../utils/mailer.js";
 
 const router = Router();
 

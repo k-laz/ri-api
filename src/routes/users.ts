@@ -1,11 +1,9 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../models/index.js";
 import { authenticateFirebaseToken } from "../middleware/auth.js"; // Middleware for Firebase authentication
-import {
-  getAllFilteredListings,
-  sendVerificationEmail,
-} from "../utils/helper.js";
+import { getAllFilteredListings } from "../utils/helper.js";
 import { generateVerificationToken } from "../utils/tokenUtils.js";
+import { sendVerificationEmail } from "../utils/mailer.js";
 
 const router = Router();
 
