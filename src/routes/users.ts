@@ -4,6 +4,7 @@ import { authenticateFirebaseToken } from "../middleware/auth.js"; // Middleware
 import { getAllFilteredListings } from "../utils/helper.js";
 import { generateVerificationToken } from "../utils/tokenUtils.js";
 import { sendVerificationEmail } from "../utils/mailer.js";
+import { generateUnsubscribeToken } from "../utils/hash.js";
 
 const router = Router();
 
@@ -36,6 +37,7 @@ router.post("/sync", async (req: Request, res: Response) => {
           role: "user",
           verificationToken: token,
           verificationTokenExpires: expiresAt,
+          unsubscribeToken: generateUnsubscribeToken(),
           isVerified: false,
         },
       });
@@ -86,6 +88,7 @@ router.post("/create", async (req: Request, res: Response) => {
         role: "user",
         verificationToken: token,
         verificationTokenExpires: expiresAt,
+        unsubscribeToken: generateUnsubscribeToken(),
         isVerified: false,
       },
     });

@@ -15,100 +15,130 @@ router.post(
   authorizeAdmin,
   async (req: Request, res: Response) => {
     try {
-      // TODO: WHY? Get listings added that have not been sent
-      const newListings: Listing[] = await prisma.listing.findMany({
+      const newListings = await prisma.listing.findMany({
         where: {
-          isSent: false, // Only get listings that have not been sent
+          isSent: false,
         },
         include: {
-          listingParameters: true, // Include parameters for filtering
+          listingParameters: true,
         },
       });
 
       if (!newListings.length) {
-        return res.status(404).json({ message: "No new listings found." });
+        return res.status(200).json({ message: "No new listings to process." });
       }
 
-      // Get all users with filters set up
       const users = await prisma.user.findMany({
         where: {
-          filter: {
-            isNot: null, // Only get users who have a filter set
-          },
+          filter: { isNot: null },
+          isVerified: true,
         },
         include: {
-          filter: true, // Include user filter for each user
+          filter: true,
         },
       });
 
       if (!users.length) {
-        return res.status(404).json({ error: "No users with filters found." });
+        return res.status(200).json({ message: "No subscribed users found." });
       }
 
-      // Track which listings have been sent
       const sentListingsIds = new Set<number>();
-
-      // Process users in batches (optional optimization for large user base)
+      const emailErrors: Array<{ email: string; error: string }> = [];
       const BATCH_SIZE = 50;
+
       for (let i = 0; i < users.length; i += BATCH_SIZE) {
         const userBatch = users.slice(i, i + BATCH_SIZE);
 
-        // Handle batch of users asynchronously
         await Promise.all(
           userBatch.map(async (user) => {
-            if (user.filter) {
-              // Use the refactored function to get the filtered listings
-              const matchedListings = newListings.filter((listing: Listing) =>
+            try {
+              if (!user.filter) return;
+
+              const matchedListings = newListings.filter((listing) =>
                 filterListing(listing, user.filter as UserFilter)
               );
 
-              if (matchedListings.length > 0) {
-                // Generate email content based on matched listings
-                const emailContent = generateEmailContent(matchedListings);
-                console.log(emailContent);
+              if (matchedListings.length === 0) return;
 
-                try {
-                  await sendListingEmail(user.email, emailContent);
+              // Format price and prepare template data
+              const templateData = {
+                listings: matchedListings.map((listing) => {
+                  const price = listing.listingParameters?.price;
+                  const formattedPrice = price
+                    ? new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "CAD",
+                      }).format(price)
+                    : "Price not specified";
 
-                  // Add matched listing IDs to the sent listings set
-                  matchedListings.forEach((listing) =>
-                    sentListingsIds.add(listing.id)
-                  );
-                } catch (err) {
-                  console.error(`Failed to send email to ${user.email}`, err);
-                  // Optionally, log failed attempts or retry
-                }
-              }
+                  return {
+                    title: `${listing.title} - ${formattedPrice}/month`,
+                    url: `${listing.link}`,
+                  };
+                }),
+                unsubscribeUrl: user.unsubscribeToken
+                  ? `${process.env.FRONTEND_URL}/unsubscribe?token=${user.unsubscribeToken}`
+                  : `${process.env.FRONTEND_URL}/settings`,
+              };
+
+              await sendListingEmail(
+                user.email,
+                templateData.listings,
+                templateData.unsubscribeUrl
+              );
+
+              matchedListings.forEach((listing) =>
+                sentListingsIds.add(listing.id)
+              );
+            } catch (error) {
+              emailErrors.push({
+                email: user.email,
+                error: error instanceof Error ? error.message : "Unknown error",
+              });
             }
           })
         );
       }
 
-      // Update the listings in the database to mark them as sent
       if (sentListingsIds.size > 0) {
         await prisma.listing.updateMany({
           where: {
             id: { in: Array.from(sentListingsIds) },
           },
-          data: { isSent: true },
+          data: {
+            isSent: true,
+          },
         });
       }
 
-      res.status(200).json({ message: "Newsletter emails sent successfully." });
+      // TODO: figure out reason for this
+      // if (emailErrors.length > 0) {
+      //   await prisma.emailError.createMany({
+      //     data: emailErrors.map((error) => ({
+      //       email: error.email,
+      //       error: error.error,
+      //       attemptedAt: new Date(),
+      //     })),
+      //   });
+      // }
+
+      return res.status(200).json({
+        message: "Newsletter processing completed",
+        stats: {
+          totalListings: newListings.length,
+          sentListings: sentListingsIds.size,
+          processedUsers: users.length,
+          emailErrors: emailErrors.length,
+        },
+      });
     } catch (error) {
-      console.error("Error sending newsletter:", error);
-      res
-        .status(500)
-        .json({ error: "An error occurred while sending newsletters." });
+      console.error("Error processing newsletter:", error);
+      return res.status(500).json({
+        error: "Failed to process newsletter",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   }
 );
-
-// Helper function to generate email content based on matched listings
-const generateEmailContent = (listings: Listing[]): string => {
-  return listings
-    .map((listing) => `- ${listing.title} | ${listing.link}`)
-    .join("\n");
-};
 
 export default router;

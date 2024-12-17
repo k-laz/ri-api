@@ -15,8 +15,13 @@ export async function sendVerificationEmail(
   );
 }
 
-export async function sendListingEmail(email: string, content: string) {
-  await EmailService.sendTemplatedEmail(email, emailTemplates.listings.name, {
-    content: content,
+export async function sendListingEmail(
+  to: string,
+  listings: Object[],
+  unsubscribeUrl: string
+) {
+  await EmailService.sendTemplatedEmail(to, emailTemplates.listings.name, {
+    listings: listings,
+    unsubscribeUrl: unsubscribeUrl,
   });
 }

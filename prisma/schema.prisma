@@ -21,6 +21,7 @@ model User {
   role      String 
   verificationToken String?
   verificationTokenExpires DateTime?
+  unsubscribeToken   String?      @unique // Add this field
   isVerified  Boolean   @default(false)
   
   filter    UserFilter?
@@ -50,7 +51,7 @@ model Listing {
   pub_date          DateTime
   isSent            Boolean             @default(false)
   
-  listingParameters ListingParameters[]
+  listingParameters ListingParameters?
 }
 
 model ListingParameters {

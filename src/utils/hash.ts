@@ -10,3 +10,7 @@ import crypto from "crypto";
 export default function generateListingHash(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
 }
+
+export function generateUnsubscribeToken(): string {
+  return crypto.randomBytes(32).toString("hex");
+}
