@@ -9,10 +9,11 @@ type ValidNumber = 0 | 1 | 2 | 3 | 4;
 const validNumbers: ValidNumber[] = [0, 1, 2, 3, 4];
 
 const FilterSchema = z.object({
-  price_limit: z
+  min_price: z
     .number()
-    .nonnegative("Price limit must be 0 or greater")
+    .nonnegative("Min Price must be 0 or greater")
     .optional(),
+  max_price: z.number().max(5000).optional(),
   move_in_date: z
     .string()
     .transform((val) => val || undefined)
@@ -95,9 +96,13 @@ router.put(
 
       // Prepare update data using Prisma's types
       const updateData: Prisma.UserFilterUpdateInput = {
-        price_limit:
-          filterData.price_limit !== undefined
-            ? { set: filterData.price_limit }
+        max_price:
+          filterData.max_price !== undefined
+            ? { set: filterData.max_price }
+            : undefined,
+        min_price:
+          filterData.min_price !== undefined
+            ? { set: filterData.min_price }
             : undefined,
         move_in_date:
           filterData.move_in_date !== undefined
@@ -146,7 +151,8 @@ router.put(
       } else {
         // For create operation, we need to transform the data differently
         const createData: Prisma.UserFilterCreateInput = {
-          price_limit: filterData.price_limit,
+          max_price: filterData.max_price,
+          min_price: filterData.min_price,
           move_in_date: filterData.move_in_date
             ? new Date(filterData.move_in_date)
             : undefined,

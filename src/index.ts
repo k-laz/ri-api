@@ -24,6 +24,11 @@ app.use("/filters", filterRoutes);
 app.use("/listings", listingRoutes);
 app.use("/admin", adminRoutes);
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// Only start the server if this file is run directly (not imported as a module)
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
+
+export default app;

@@ -5,7 +5,7 @@ import {
   authorizeAdmin,
 } from "../middleware/auth.js";
 import { filterListing } from "../utils/helper.js";
-import { sendListingEmail } from "../utils/mailer.js";
+import { sendListingEmail } from "../services/emailService.js";
 
 const router = Router();
 
@@ -76,15 +76,12 @@ router.post(
                     url: `${listing.link}`,
                   };
                 }),
-                unsubscribeUrl: user.unsubscribeToken
-                  ? `${process.env.FRONTEND_URL}/unsubscribe?token=${user.unsubscribeToken}`
-                  : `${process.env.FRONTEND_URL}/settings`,
               };
 
               await sendListingEmail(
                 user.email,
                 templateData.listings,
-                templateData.unsubscribeUrl
+                `${process.env.APP_URL}/unsubscribe?token=${user.unsubscribeToken}`
               );
 
               matchedListings.forEach((listing) =>

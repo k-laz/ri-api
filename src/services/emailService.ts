@@ -3,6 +3,7 @@ import {
   SendTemplatedEmailCommand,
   CreateTemplateCommand,
 } from "@aws-sdk/client-ses";
+import { emailTemplates } from "../utils/emailTemplates.js";
 
 const sesClient = new SESClient({
   region: process.env.AWS_REGION,
@@ -58,4 +59,29 @@ export class EmailService {
       throw error;
     }
   }
+}
+
+export async function sendVerificationEmail(
+  email: string,
+  verificationToken: string
+) {
+  // Send verification email
+  await EmailService.sendTemplatedEmail(
+    email,
+    emailTemplates.verification.name,
+    {
+      verificationLink: `${process.env.APP_URL}/auth/verify-email?token=${verificationToken}`,
+    }
+  );
+}
+
+export async function sendListingEmail(
+  to: string,
+  listings: Object[],
+  unsubscribeUrl: string
+) {
+  await EmailService.sendTemplatedEmail(to, emailTemplates.listings.name, {
+    listings: listings,
+    unsubscribeUrl: unsubscribeUrl,
+  });
 }

@@ -4,7 +4,7 @@ import {
   generateVerificationToken,
   verifyJWTToken,
 } from "../utils/tokenUtils.js";
-import { sendVerificationEmail } from "../utils/mailer.js";
+import { sendVerificationEmail } from "../services/emailService.js";
 
 const router = Router();
 

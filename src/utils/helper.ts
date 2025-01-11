@@ -5,10 +5,18 @@ export async function filterListing(listing: Listing, userFilter: UserFilter) {
     const conditions: any[] = [];
 
     // Add price filter if provided
-    if (userFilter.price_limit != null) {
+    if (userFilter.max_price != null) {
       conditions.push({
         price: {
-          lte: userFilter.price_limit,
+          lte: userFilter.max_price,
+        },
+      });
+    }
+
+    if (userFilter.min_price != null) {
+      conditions.push({
+        price: {
+          gte: userFilter.min_price,
         },
       });
     }

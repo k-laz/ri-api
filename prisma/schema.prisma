@@ -23,14 +23,15 @@ model User {
   verificationTokenExpires DateTime?
   unsubscribeToken   String?      @unique // Add this field
   isVerified  Boolean   @default(false)
-  
+  isSubscribed Boolean @default(true)
   filter    UserFilter?
 }
 
 model UserFilter {
   id              Int      @id @default(autoincrement())
   userId          Int      @unique
-  price_limit     Float?
+  min_price       Float?
+  max_price       Float?
   move_in_date    DateTime?
   length_of_stay  String?
   num_baths Int[] //(0 | 1 | 2 | 3 | 4)[];
@@ -64,5 +65,5 @@ model ListingParameters {
   furnished      Boolean?
   pets           Boolean?
   listingId      Int       @unique
-  listing        Listing   @relation(fields: [listingId], references: [id])
+  listing        Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
 }

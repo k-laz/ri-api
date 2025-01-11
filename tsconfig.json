@@ -14,7 +14,8 @@
     "typeRoots": ["./src/types", "./node_modules/@types"]
   },
   "include": [
-    "src/**/*" // This tells TypeScript to compile files in src
+    "src/**/*", // This tells TypeScript to compile files in src
+    "src/tests"
   ],
   "exclude": ["node_modules", "dist"]
 }

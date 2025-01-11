@@ -3,7 +3,7 @@ import { prisma } from "../models/index.js";
 import { authenticateFirebaseToken } from "../middleware/auth.js"; // Middleware for Firebase authentication
 import { getAllFilteredListings } from "../utils/helper.js";
 import { generateVerificationToken } from "../utils/tokenUtils.js";
-import { sendVerificationEmail } from "../utils/mailer.js";
+import { sendVerificationEmail } from "../services/emailService.js";
 import { generateUnsubscribeToken } from "../utils/hash.js";
 
 const router = Router();
@@ -172,6 +172,7 @@ router.get(
         filter: user.filter,
         email: user.email,
         isVerified: user.isVerified,
+        isSubscribed: user.isSubscribed,
       };
 
       return res.status(200).json(userData); // Added return here
@@ -219,6 +220,50 @@ router.get(
     }
   }
 );
+router.patch("/unsubscribe", async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        error: "Unsubscribe token is required",
+      });
+    }
+
+    // Find user by unsubscribe token
+    const updatedUser = await prisma.user.update({
+      where: {
+        unsubscribeToken: token, // Use token instead of firebaseUId
+      },
+      data: {
+        isSubscribed: false,
+        // Generate new token for future use
+        unsubscribeToken: generateUnsubscribeToken(),
+      },
+      select: {
+        email: true,
+        isSubscribed: true,
+      },
+    });
+
+    return res.json({
+      message: "Successfully unsubscribed from notifications",
+      email: updatedUser.email,
+      isSubscribed: updatedUser.isSubscribed,
+    });
+  } catch (error) {
+    // If token not found, Prisma will throw
+    if (error instanceof Error) {
+      console.log(error);
+    }
+
+    console.error("Unsubscribe error:", error);
+    return res.status(500).json({
+      error:
+        error instanceof Error ? error.message : "An unknown error occurred",
+    });
+  }
+});
 
 // Optional: Add an error handler middleware
 router.use((error: Error, req: Request, res: Response, next: Function) => {
