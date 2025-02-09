@@ -29,11 +29,11 @@ router.get(
       const users = await prisma.user.findMany({
         where: {
           filter: {
-            isNot: null, // Only get users who have a filter set
+            isNot: null,
           },
         },
         include: {
-          filter: true, // Include user filter for each user
+          filter: true,
         },
       });
 

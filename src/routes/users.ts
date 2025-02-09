@@ -167,12 +167,17 @@ router.get(
         return res.status(404).json({ error: "User not found" });
       }
 
-      // For now user data is just filter
+      let listings = null;
+      if (user.filter) {
+        listings = await getAllFilteredListings(user.filter);
+      }
+
       const userData = {
         filter: user.filter,
         email: user.email,
         isVerified: user.isVerified,
         isSubscribed: user.isSubscribed,
+        listings: listings,
       };
 
       return res.status(200).json(userData); // Added return here
@@ -186,40 +191,6 @@ router.get(
   }
 );
 
-// Get User Listings
-router.get(
-  "me/listings",
-  authenticateFirebaseToken,
-  async (req: Request, res: Response) => {
-    try {
-      const firebaseUId = req.user?.uid;
-
-      // Find the user by Firebase UID and include the associated filters
-      const user = await prisma.user.findUnique({
-        where: { firebaseUId },
-        include: { filter: true }, // Assuming "filter" is the name of the relation
-      });
-
-      if (!user || !user.filter) {
-        return res.status(404).json({ error: "User or filters not found" });
-      }
-
-      const listings = await getAllFilteredListings(user.filter);
-
-      if (!listings.length) {
-        return res
-          .status(404)
-          .json({ message: "No listings match your filters" });
-      }
-
-      res.status(200).json(listings);
-    } catch (error) {
-      if (error instanceof Error) {
-        res.status(500).json({ error: error.message });
-      }
-    }
-  }
-);
 router.patch("/unsubscribe", async (req: Request, res: Response) => {
   try {
     const { token } = req.body;

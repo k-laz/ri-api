@@ -90,16 +90,24 @@ export async function filterListing(listing: Listing, userFilter: UserFilter) {
   }
 }
 
-export async function getAllFilteredListings(userFilter: any) {
+export async function getAllFilteredListings(userFilter: Partial<UserFilter>) {
   try {
     // Build filter conditions dynamically
     const conditions: any[] = [];
 
     // Add price filter if provided
-    if (userFilter.price_limit != null) {
+    if (userFilter.max_price != null) {
       conditions.push({
         price: {
-          lte: userFilter.price_limit,
+          lte: userFilter.max_price,
+        },
+      });
+    }
+
+    if (userFilter.min_price != null) {
+      conditions.push({
+        price: {
+          gte: userFilter.min_price,
         },
       });
     }
@@ -114,21 +122,21 @@ export async function getAllFilteredListings(userFilter: any) {
     }
 
     // Add beds filter if provided
-    if (userFilter.num_beds?.length > 0) {
+    if (userFilter.num_beds?.length != null) {
       conditions.push({
         OR: [{ num_beds: { in: userFilter.num_beds } }, { num_beds: null }],
       });
     }
 
     // Add baths filter if provided
-    if (userFilter.num_baths?.length > 0) {
+    if (userFilter.num_baths?.length != null) {
       conditions.push({
         OR: [{ num_baths: { in: userFilter.num_baths } }, { num_baths: null }],
       });
     }
 
     // Add parking filter if provided
-    if (userFilter.num_parking?.length > 0) {
+    if (userFilter.num_parking?.length != null) {
       conditions.push({
         OR: [{ parking: { in: userFilter.num_parking } }, { parking: null }],
       });

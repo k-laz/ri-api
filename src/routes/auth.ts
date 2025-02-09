@@ -66,10 +66,10 @@ router.post("/verify-email", async (req: Request, res: Response) => {
       },
     });
 
-    res.json({ message: "Email verified successfully" });
+    res.status(200).json({ verified: true });
   } catch (error) {
     console.error("Verification error:", error);
-    res.status(500).json({ error: "Error verifying email" });
+    res.status(500).json({ verified: false });
   }
 });
 
