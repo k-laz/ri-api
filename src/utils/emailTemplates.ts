@@ -40,7 +40,7 @@ export const emailTemplates = {
   },
   verification: {
     name: "EmailVerification",
-    subject: "Verify Your Email - Rental Insight",
+    subject: "Verify Your Email - Rentals Insight",
     html: `
     <!DOCTYPE html>
     <html>
